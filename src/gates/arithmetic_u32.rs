@@ -1,10 +1,10 @@
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use alloc::{format, vec};
+use core::iter;
 use core::marker::PhantomData;
 use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
 
-use itertools::unfold;
 use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;
 use plonky2::field::types::Field;
@@ -414,7 +414,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
 
         let num_limbs = U32ArithmeticGate::<F, D>::num_limbs();
         let limb_base = 1 << U32ArithmeticGate::<F, D>::limb_bits();
-        let output_limbs_u64 = unfold((), move |_| {
+        let output_limbs_u64 = iter::from_fn(move || {
             let ret = output_u64 % limb_base;
             output_u64 /= limb_base;
             Some(ret)

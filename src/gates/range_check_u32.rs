@@ -233,8 +233,9 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
 
 #[cfg(test)]
 mod tests {
+    use core::iter;
+
     use anyhow::Result;
-    use itertools::unfold;
     use plonky2::field::extension::quartic::QuarticExtension;
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::field::types::{Field, Sample};
@@ -275,7 +276,7 @@ mod tests {
                 let input_limb = input_limbs[i];
 
                 let split_to_limbs = |mut val, num| {
-                    unfold((), move |_| {
+                    iter::from_fn(move || {
                         let ret = val % (BASE as u64);
                         val /= BASE as u64;
                         Some(ret)
