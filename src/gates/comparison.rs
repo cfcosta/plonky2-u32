@@ -1,29 +1,44 @@
-use alloc::string::{String, ToString};
-use alloc::vec::Vec;
-use alloc::{format, vec};
-use core::marker::PhantomData;
-use plonky2::plonk::circuit_data::CommonCircuitData;
-use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
-
-use plonky2::field::extension::Extendable;
-use plonky2::field::packed::PackedField;
-use plonky2::field::types::{Field, Field64};
-use plonky2::gates::gate::Gate;
-use plonky2::gates::packed_util::PackedEvaluableBase;
-use plonky2::gates::util::StridedConstraintConsumer;
-use plonky2::hash::hash_types::RichField;
-use plonky2::iop::ext_target::ExtensionTarget;
-use plonky2::iop::generator::{GeneratedValues, SimpleGenerator, WitnessGeneratorRef};
-use plonky2::iop::target::Target;
-use plonky2::iop::wire::Wire;
-use plonky2::iop::witness::{PartitionWitness, Witness, WitnessWrite};
-use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::plonk_common::{reduce_with_powers, reduce_with_powers_ext_circuit};
-use plonky2::plonk::vars::{
-    EvaluationTargets, EvaluationVars, EvaluationVarsBase, EvaluationVarsBaseBatch,
-    EvaluationVarsBasePacked,
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec,
+    vec::Vec,
 };
-use plonky2::util::{bits_u64, ceil_div_usize};
+use core::marker::PhantomData;
+
+use plonky2::{
+    field::{
+        extension::Extendable,
+        packed::PackedField,
+        types::{Field, Field64},
+    },
+    gates::{gate::Gate, packed_util::PackedEvaluableBase, util::StridedConstraintConsumer},
+    hash::hash_types::RichField,
+    iop::{
+        ext_target::ExtensionTarget,
+        generator::{GeneratedValues, SimpleGenerator, WitnessGeneratorRef},
+        target::Target,
+        wire::Wire,
+        witness::{PartitionWitness, Witness, WitnessWrite},
+    },
+    plonk::{
+        circuit_builder::CircuitBuilder,
+        circuit_data::CommonCircuitData,
+        plonk_common::{reduce_with_powers, reduce_with_powers_ext_circuit},
+        vars::{
+            EvaluationTargets,
+            EvaluationVars,
+            EvaluationVarsBase,
+            EvaluationVarsBaseBatch,
+            EvaluationVarsBasePacked,
+        },
+    },
+    util::{
+        bits_u64,
+        ceil_div_usize,
+        serialization::{Buffer, IoResult, Read, Write},
+    },
+};
 
 /// A gate for checking that one value is less than or equal to another.
 #[derive(Clone, Debug)]
@@ -274,8 +289,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for ComparisonGate
         }
 
         let most_significant_diff = vars.local_wires[self.wire_most_significant_diff()];
-        constraints
-            .push(builder.sub_extension(most_significant_diff, most_significant_diff_so_far));
+        constraints.push(builder.sub_extension(most_significant_diff, most_significant_diff_so_far));
 
         let most_significant_diff_bits: Vec<ExtensionTarget<D>> = (0..self.chunk_bits() + 1)
             .map(|i| vars.local_wires[self.wire_most_significant_diff_bit(i)])
@@ -288,8 +302,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for ComparisonGate
         }
 
         let two = builder.two();
-        let bits_combined =
-            reduce_with_powers_ext_circuit(builder, &most_significant_diff_bits, two);
+        let bits_combined = reduce_with_powers_ext_circuit(builder, &most_significant_diff_bits, two);
         let two_n =
             builder.constant_extension(F::Extension::from_canonical_u64(1 << self.chunk_bits()));
         let sum = builder.add_extension(two_n, most_significant_diff);
@@ -297,9 +310,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for ComparisonGate
 
         // Iff first <= second, the top (n + 1st) bit of (2^n + most_significant_diff) will be 1.
         let result_bool = vars.local_wires[self.wire_result_bool()];
-        constraints.push(
-            builder.sub_extension(result_bool, most_significant_diff_bits[self.chunk_bits()]),
-        );
+        constraints
+            .push(builder.sub_extension(result_bool, most_significant_diff_bits[self.chunk_bits()]));
 
         constraints
     }
@@ -386,8 +398,7 @@ impl<F: RichField + Extendable<D>, const D: usize> PackedEvaluableBase<F, D>
             // Update `most_significant_diff_so_far`.
             let intermediate_value = vars.local_wires[self.wire_intermediate_value(i)];
             yield_constr.one(intermediate_value - chunks_equal * most_significant_diff_so_far);
-            most_significant_diff_so_far =
-                intermediate_value + (P::ONES - chunks_equal) * difference;
+            most_significant_diff_so_far = intermediate_value + (P::ONES - chunks_equal) * difference;
         }
 
         let most_significant_diff = vars.local_wires[self.wire_most_significant_diff()];
@@ -549,13 +560,16 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-    use plonky2::field::goldilocks_field::GoldilocksField;
-    use plonky2::field::types::{PrimeField64, Sample};
-    use plonky2::gates::gate_testing::{test_eval_fns, test_low_degree};
-    use plonky2::hash::hash_types::HashOut;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
-    use rand::rngs::OsRng;
-    use rand::Rng;
+    use plonky2::{
+        field::{
+            goldilocks_field::GoldilocksField,
+            types::{PrimeField64, Sample},
+        },
+        gates::gate_testing::{test_eval_fns, test_low_degree},
+        hash::hash_types::HashOut,
+        plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
+    };
+    use rand::{rngs::OsRng, Rng};
 
     use super::*;
 
@@ -665,8 +679,7 @@ mod tests {
             }
             let most_significant_diff = most_significant_diff_so_far;
 
-            let two_n_plus_msd =
-                (1 << chunk_bits) as u64 + most_significant_diff.to_canonical_u64();
+            let two_n_plus_msd = (1 << chunk_bits) as u64 + most_significant_diff.to_canonical_u64();
             let mut msd_bits: Vec<F> = (0..chunk_bits + 1)
                 .scan(two_n_plus_msd, |acc, _| {
                     let tmp = *acc % 2;

@@ -1,22 +1,31 @@
-use alloc::string::{String, ToString};
-use alloc::vec;
-use alloc::vec::Vec;
+use alloc::{
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
 use core::marker::PhantomData;
-use plonky2::plonk::circuit_data::CommonCircuitData;
-use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
 
-use plonky2::field::extension::Extendable;
-use plonky2::hash::hash_types::RichField;
-use plonky2::iop::generator::{GeneratedValues, SimpleGenerator};
-use plonky2::iop::target::Target;
-use plonky2::iop::witness::{PartitionWitness, Witness};
-use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::{
+    field::extension::Extendable,
+    hash::hash_types::RichField,
+    iop::{
+        generator::{GeneratedValues, SimpleGenerator},
+        target::Target,
+        witness::{PartitionWitness, Witness},
+    },
+    plonk::{circuit_builder::CircuitBuilder, circuit_data::CommonCircuitData},
+    util::serialization::{Buffer, IoResult, Read, Write},
+};
 
-use crate::gates::add_many_u32::U32AddManyGate;
-use crate::gates::arithmetic_u32::U32ArithmeticGate;
-use crate::gates::subtraction_u32::U32SubtractionGate;
-use crate::serialization::{ReadU32, WriteU32};
-use crate::witness::GeneratedValuesU32;
+use crate::{
+    gates::{
+        add_many_u32::U32AddManyGate,
+        arithmetic_u32::U32ArithmeticGate,
+        subtraction_u32::U32SubtractionGate,
+    },
+    serialization::{ReadU32, WriteU32},
+    witness::GeneratedValuesU32,
+};
 
 #[derive(Clone, Copy, Debug)]
 pub struct U32Target(pub Target);
@@ -66,9 +75,7 @@ pub trait CircuitBuilderU32<F: RichField + Extendable<D>, const D: usize> {
     fn sub_u32(&mut self, x: U32Target, y: U32Target, borrow: U32Target) -> (U32Target, U32Target);
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderU32<F, D>
-    for CircuitBuilder<F, D>
-{
+impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderU32<F, D> for CircuitBuilder<F, D> {
     fn add_virtual_u32_target(&mut self) -> U32Target {
         U32Target(self.add_virtual_target())
     }
@@ -162,8 +169,7 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderU32<F, D>
             _ => {
                 let num_addends = to_add.len();
                 let gate = U32AddManyGate::<F, D>::new_from_config(&self.config, num_addends);
-                let (row, copy) =
-                    self.find_slot(gate, &[F::from_canonical_usize(num_addends)], &[]);
+                let (row, copy) = self.find_slot(gate, &[F::from_canonical_usize(num_addends)], &[]);
 
                 for j in 0..num_addends {
                     self.connect(
@@ -285,11 +291,14 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-    use plonky2::iop::witness::PartialWitness;
-    use plonky2::plonk::circuit_data::CircuitConfig;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
-    use rand::rngs::OsRng;
-    use rand::Rng;
+    use plonky2::{
+        iop::witness::PartialWitness,
+        plonk::{
+            circuit_data::CircuitConfig,
+            config::{GenericConfig, PoseidonGoldilocksConfig},
+        },
+    };
+    use rand::{rngs::OsRng, Rng};
 
     use super::*;
 
