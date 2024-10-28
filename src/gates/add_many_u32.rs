@@ -48,7 +48,6 @@ impl<F: RichField + Extendable<D>, const D: usize> U32AddManyGate<F, D> {
     }
 
     pub(crate) fn num_ops(num_addends: usize, config: &CircuitConfig) -> usize {
-        debug_assert!(num_addends <= MAX_NUM_ADDENDS);
         let wires_per_op = (num_addends + 3) + Self::num_limbs();
         let routed_wires_per_op = num_addends + 3;
         (config.num_wires / wires_per_op).min(config.num_routed_wires / routed_wires_per_op)
@@ -221,7 +220,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for U32AddManyGate
 
             let base: F::Extension = F::from_canonical_u64(1 << 32u64).into();
             let base_target = builder.constant_extension(base);
-            let combined_output = builder.mul_add_extension(output_carry, base_target, output_result);
+            let combined_output =
+                builder.mul_add_extension(output_carry, base_target, output_result);
 
             constraints.push(builder.sub_extension(combined_output, computed_output));
 
@@ -235,7 +235,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for U32AddManyGate
 
                 let mut product = builder.one_extension();
                 for x in 0..max_limb {
-                    let x_target = builder.constant_extension(F::Extension::from_canonical_usize(x));
+                    let x_target =
+                        builder.constant_extension(F::Extension::from_canonical_usize(x));
                     let diff = builder.sub_extension(this_limb, x_target);
                     product = builder.mul_extension(product, diff);
                 }
@@ -388,9 +389,7 @@ mod tests {
     use anyhow::Result;
     use plonky2::{
         field::{
-            extension::quartic::QuarticExtension,
-            goldilocks_field::GoldilocksField,
-            types::Sample,
+            extension::quartic::QuarticExtension, goldilocks_field::GoldilocksField, types::Sample,
         },
         gates::gate_testing::{test_eval_fns, test_low_degree},
         hash::hash_types::HashOut,
@@ -456,7 +455,8 @@ mod tests {
 
                 let mut result_limbs: Vec<_> =
                     split_to_limbs(output_result, num_result_limbs).collect();
-                let mut carry_limbs: Vec<_> = split_to_limbs(output_carry, num_carry_limbs).collect();
+                let mut carry_limbs: Vec<_> =
+                    split_to_limbs(output_carry, num_carry_limbs).collect();
 
                 for a in adds {
                     v0.push(F::from_canonical_u64(*a));
